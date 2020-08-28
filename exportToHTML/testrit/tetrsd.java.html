@@ -1,0 +1,755 @@
+<html>
+<head>
+<title>tetrsd.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #808080;}
+.s3 { color: #6897bb;}
+.s4 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+tetrsd.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">testrit</span><span class="s0">;</span>
+
+<span class="s0">import </span><span class="s1">java.awt.AlphaComposite</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.Color</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.Graphics</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.Graphics2D</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.ActionEvent</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.ActionListener</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.KeyEvent</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.awt.event.KeyListener</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.util.ArrayList</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">java.util.Random</span><span class="s0">;</span>
+
+<span class="s0">import </span><span class="s1">javax.swing.Timer</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">javax.swing.ImageIcon</span><span class="s0">;</span>
+<span class="s0">import </span><span class="s1">javax.swing.JPanel</span><span class="s0">;</span>
+
+<span class="s0">public class </span><span class="s1">tetrsd </span><span class="s0">extends </span><span class="s1">JPanel </span><span class="s0">implements </span><span class="s1">KeyListener</span><span class="s0">, </span><span class="s1">ActionListener{</span>
+	
+	
+	
+	<span class="s1">Random rnd = </span><span class="s0">new </span><span class="s1">Random()</span><span class="s0">;</span><span class="s2">//optimize pls</span>
+	
+	<span class="s1">Piece piece = </span><span class="s0">new </span><span class="s1">Piece(</span><span class="s3">1</span><span class="s0">, </span><span class="s3">210</span><span class="s0">, </span><span class="s3">0</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">Piece[] queue = </span><span class="s0">new </span><span class="s1">Piece[</span><span class="s3">3</span><span class="s1">]</span><span class="s0">;</span><span class="s2">//block queue array; only shows 3 next blocks</span>
+	<span class="s1">Piece hPiece = </span><span class="s0">null;</span>
+	<span class="s1">Piece gPiece</span><span class="s0">;</span>
+	
+	<span class="s2">//list of types.  used for fair rng, holds one of every type and pops random type when spawning new piece</span>
+	<span class="s1">ArrayList&lt;Integer&gt; tQueue = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;()</span><span class="s0">;</span>
+	
+	<span class="s0">private final </span><span class="s1">Timer timer</span><span class="s0">;</span>
+	
+	<span class="s2">//gameboard grid 20row x 10column</span>
+	<span class="s0">int</span><span class="s1">[][] board = </span><span class="s0">new int</span><span class="s1">[</span><span class="s3">20</span><span class="s1">][</span><span class="s3">10</span><span class="s1">]</span><span class="s0">;</span>
+	
+	<span class="s0">private int </span><span class="s1">delay = </span><span class="s3">800</span><span class="s0">;</span>
+	<span class="s0">int </span><span class="s1">level = </span><span class="s3">0</span><span class="s0">;</span>
+	<span class="s0">int </span><span class="s1">score = </span><span class="s3">0</span><span class="s0">;</span>
+	<span class="s0">int </span><span class="s1">linesCleared = </span><span class="s3">0</span><span class="s0">;</span><span class="s2">//this value only holds temporary lines cleared</span>
+	<span class="s0">int </span><span class="s1">totalLines = </span><span class="s3">0</span><span class="s0">;</span>
+	<span class="s0">int </span><span class="s1">tSpinCount = </span><span class="s3">0</span><span class="s0">;</span><span class="s2">//count for t spin triples  ###UNIMPLEMENTED tspin triples only happen in sequence with tspin single move possible implementation is check tspin triple coords when trying to rotate if t spin count &gt; 0</span>
+	
+	
+	
+	<span class="s0">boolean </span><span class="s1">starting = </span><span class="s0">true;</span><span class="s2">//for init purposes</span>
+	<span class="s0">boolean </span><span class="s1">fastfall = </span><span class="s0">false;</span>
+	<span class="s0">boolean </span><span class="s1">gameOver = </span><span class="s0">false;</span>
+	<span class="s0">boolean </span><span class="s1">canHold = </span><span class="s0">true;</span>
+	
+	<span class="s2">//import our block images;  each must be 42px x 42px if changing graphics game size is not scalable</span>
+	<span class="s1">ImageIcon lBlue = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;blue.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon blue = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;dBlue.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon red = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;red.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon orange = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;orange.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon yellow = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;yellow.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon purp = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;purple.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	<span class="s1">ImageIcon green = </span><span class="s0">new </span><span class="s1">ImageIcon(</span><span class="s4">&quot;green.jpg&quot;</span><span class="s1">)</span><span class="s0">;</span>
+	
+	<span class="s2">//Initializes game</span>
+	<span class="s0">public </span><span class="s1">tetrsd() {</span>
+		<span class="s1">System.out.println(</span><span class="s4">&quot;should be printing&quot;</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">addKeyListener(</span><span class="s0">this</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">setFocusable(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">setFocusTraversalKeysEnabled(</span><span class="s0">false</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">timer = </span><span class="s0">new </span><span class="s1">Timer(delay</span><span class="s0">, this</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">timer.start()</span><span class="s0">;</span>
+	<span class="s1">}</span>
+	<span class="s2">//TODO implement more fair rng when spawning pieces</span>
+	<span class="s0">public void </span><span class="s1">paint(Graphics g) {</span>
+		<span class="s1">requestFocus(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+		
+		<span class="s2">//draw all the static graphics and scoreboards</span>
+		<span class="s1">g.setColor(Color.darkGray)</span><span class="s0">;</span>
+		<span class="s1">g.fillRect(</span><span class="s3">0</span><span class="s0">, </span><span class="s3">0</span><span class="s0">, </span><span class="s3">420</span><span class="s0">, </span><span class="s3">840</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g.setColor(Color.gray)</span><span class="s0">;</span>
+		<span class="s1">g.fillRect(</span><span class="s3">420</span><span class="s0">, </span><span class="s3">0</span><span class="s0">, </span><span class="s3">650</span><span class="s0">, </span><span class="s3">840</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g.setColor(Color.black)</span><span class="s0">;</span>
+		<span class="s1">g.drawString(</span><span class="s4">&quot;Score: &quot; </span><span class="s1">+ score</span><span class="s0">, </span><span class="s3">520</span><span class="s0">, </span><span class="s3">12</span><span class="s1">)</span><span class="s0">;</span><span class="s2">//scoreboard</span>
+		<span class="s1">g.drawString(</span><span class="s4">&quot;Level: &quot; </span><span class="s1">+ level</span><span class="s0">, </span><span class="s3">450</span><span class="s0">, </span><span class="s3">12</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g.drawString(</span><span class="s4">&quot;Lines: &quot; </span><span class="s1">+ totalLines</span><span class="s0">, </span><span class="s3">450</span><span class="s0">, </span><span class="s3">25</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g.setColor(Color.black)</span><span class="s0">;</span>
+		<span class="s1">g.drawRoundRect(</span><span class="s3">440</span><span class="s0">, </span><span class="s3">30</span><span class="s0">, </span><span class="s3">176</span><span class="s0">, </span><span class="s3">176</span><span class="s0">, </span><span class="s3">5</span><span class="s0">, </span><span class="s3">5</span><span class="s1">)</span><span class="s0">;</span>
+
+		<span class="s2">//logarithmically speeds up gravity so it's contingent on level, but also not insanely fast at higher levels</span>
+		<span class="s0">if</span><span class="s1">(fastfall)</span>
+			<span class="s1">timer.setDelay((</span><span class="s0">int</span><span class="s1">)(</span><span class="s3">29 </span><span class="s1">* Math.log(delay)))</span><span class="s0">;</span>
+		<span class="s0">else</span>
+			<span class="s1">timer.setDelay(delay)</span><span class="s0">;</span>
+		
+		
+		<span class="s0">if</span><span class="s1">(starting) {</span><span class="s2">//initialize game</span>
+			<span class="s1">piece = </span><span class="s0">new </span><span class="s1">Piece(returnType()</span><span class="s0">, </span><span class="s3">210</span><span class="s0">, </span><span class="s3">0</span><span class="s1">)</span><span class="s0">;</span><span class="s2">//first piece</span>
+			
+			<span class="s1">gPiece = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s3">210</span><span class="s0">, </span><span class="s3">840</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">gPiece.isFalling = </span><span class="s0">false;</span>
+			<span class="s1">gPiece.y = </span><span class="s3">840</span><span class="s0">;</span>
+			<span class="s0">if</span><span class="s1">(piece.t == </span><span class="s3">0</span><span class="s1">) {</span>
+				<span class="s1">piece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+				<span class="s1">gPiece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">}</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">i = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">i &lt; </span><span class="s3">3</span><span class="s0">; </span><span class="s1">i++) {</span>
+				<span class="s1">queue[i] = (</span><span class="s0">new </span><span class="s1">Piece(returnType()</span><span class="s0">, </span><span class="s3">490</span><span class="s0">, </span><span class="s3">225 </span><span class="s1">+ i*</span><span class="s3">200</span><span class="s1">))</span><span class="s0">;</span><span class="s2">//initialize first queue pieces</span>
+				<span class="s1">queue[i].isFalling = </span><span class="s0">false;</span><span class="s2">//make sure they don't have gravity otherwise this ends the next conditional early</span>
+			<span class="s1">}</span>
+			<span class="s1">starting = </span><span class="s0">false;</span>
+		<span class="s1">}</span>
+			
+		<span class="s0">if</span><span class="s1">(!piece.isFalling) {</span>
+
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+				<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+					<span class="s0">if</span><span class="s1">(piece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s1">board[(piece.y + (</span><span class="s3">42</span><span class="s1">*r))/</span><span class="s3">42</span><span class="s1">][(piece.x + (</span><span class="s3">42</span><span class="s1">*c))/</span><span class="s3">42</span><span class="s1">] = piece.t + </span><span class="s3">1</span><span class="s0">;</span><span class="s2">//set board coords to piece color</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+			<span class="s1">queuePiece()</span><span class="s0">;</span>
+			<span class="s1">canHold = </span><span class="s0">true;</span>
+			<span class="s1">checkLines()</span><span class="s0">;			</span>
+			<span class="s1">piece.isFalling = </span><span class="s0">true;</span>
+		<span class="s1">}</span>
+		
+		<span class="s2">//paint current block</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(piece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s0">switch </span><span class="s1">(piece.t) {</span>
+						<span class="s0">case </span><span class="s3">0 </span><span class="s1">-&gt; lBlue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">1 </span><span class="s1">-&gt; orange.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">2 </span><span class="s1">-&gt; blue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">3 </span><span class="s1">-&gt; green.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">4 </span><span class="s1">-&gt; purp.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">5 </span><span class="s1">-&gt; red.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">6 </span><span class="s1">-&gt; yellow.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">piece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">piece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		<span class="s1">paintGhost(g)</span><span class="s0">;</span>
+		
+		<span class="s2">//paint hold block</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(hPiece != </span><span class="s0">null </span><span class="s1">&amp;&amp; hPiece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s2">//176x176 fitting 168x168</span>
+					<span class="s0">switch </span><span class="s1">(hPiece.t) {</span>
+						<span class="s0">case </span><span class="s3">0 </span><span class="s1">-&gt; lBlue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">465 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">34 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">1 </span><span class="s1">-&gt; orange.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">55 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">2 </span><span class="s1">-&gt; blue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">55 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">3 </span><span class="s1">-&gt; green.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">55 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">4 </span><span class="s1">-&gt; purp.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">55 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">5 </span><span class="s1">-&gt; red.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">55 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">6 </span><span class="s1">-&gt; yellow.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s3">486 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s3">76 </span><span class="s1">+ (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		<span class="s2">//paint old blocks</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">20</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">10</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">try </span><span class="s1">{</span>
+					<span class="s0">switch</span><span class="s1">(board[r][c]) {</span>
+						<span class="s0">case </span><span class="s3">1 </span><span class="s1">-&gt; lBlue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">2 </span><span class="s1">-&gt; orange.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">3 </span><span class="s1">-&gt; blue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">4 </span><span class="s1">-&gt; green.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">5 </span><span class="s1">-&gt; purp.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">6 </span><span class="s1">-&gt; red.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">7 </span><span class="s1">-&gt; yellow.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*c)</span><span class="s0">, </span><span class="s1">(</span><span class="s3">42</span><span class="s1">*r))</span><span class="s0">;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span><span class="s0">catch</span><span class="s1">(NullPointerException e) {</span>
+					<span class="s0">return;</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		<span class="s2">//paint queue blocks</span>
+		<span class="s0">for</span><span class="s1">(Piece p : queue) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+				<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+					<span class="s0">if</span><span class="s1">(p.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s0">switch </span><span class="s1">(p.t) {</span>
+							<span class="s0">case </span><span class="s3">0 </span><span class="s1">-&gt; lBlue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">1 </span><span class="s1">-&gt; orange.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">2 </span><span class="s1">-&gt; blue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">3 </span><span class="s1">-&gt; green.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">4 </span><span class="s1">-&gt; purp.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">5 </span><span class="s1">-&gt; red.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+							<span class="s0">case </span><span class="s3">6 </span><span class="s1">-&gt; yellow.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">p.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">p.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		
+		<span class="s1">g.dispose()</span><span class="s0">;</span>
+	<span class="s1">}</span>
+
+	<span class="s1">@Override</span>
+	<span class="s0">public void </span><span class="s1">actionPerformed(ActionEvent e) {</span>
+		<span class="s2">// TODO Auto-generated method stub</span>
+		
+		<span class="s1">timer.start()</span><span class="s0">;</span><span class="s2">//commence gameplay based on timer set</span>
+		<span class="s0">if</span><span class="s1">(gameOver)</span>
+			<span class="s1">timer.stop()</span><span class="s0">;</span><span class="s2">//stop gameplay when game's over</span>
+		<span class="s2">//implement 9 speed levels</span>
+		<span class="s0">if</span><span class="s1">(level &lt; </span><span class="s3">9</span><span class="s1">)</span>
+			<span class="s1">delay = (</span><span class="s0">int</span><span class="s1">) (((</span><span class="s3">48</span><span class="s1">-(</span><span class="s3">5</span><span class="s1">*(</span><span class="s0">float</span><span class="s1">)level))/</span><span class="s3">60</span><span class="s1">)*</span><span class="s3">1000</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">else</span>
+			<span class="s1">delay = (</span><span class="s0">int</span><span class="s1">)(((</span><span class="s0">float</span><span class="s1">)</span><span class="s3">2</span><span class="s1">/level)*</span><span class="s3">500</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">timer.setDelay(delay)</span><span class="s0">;	</span>
+
+		<span class="s0">if</span><span class="s1">(canFall()) {</span><span class="s2">//otherwise start dropping em</span>
+			<span class="s1">piece.Gravity()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s1">repaint()</span><span class="s0">;	</span><span class="s2">//animate by redrawing everything with updated coordinates on main piece</span>
+	<span class="s1">}</span>
+
+	<span class="s1">@Override</span>
+	<span class="s0">public void </span><span class="s1">keyTyped(KeyEvent e) {</span>
+		<span class="s2">// TODO Auto-generated method stub</span>
+		
+	<span class="s1">}</span>
+
+	<span class="s1">@Override</span>
+	<span class="s0">public void </span><span class="s1">keyReleased(KeyEvent e) {</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_DOWN)</span>
+			<span class="s1">fastfall = </span><span class="s0">false;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//TODO make rotations only happen once per button press</span>
+	<span class="s1">@Override</span>
+	<span class="s0">public void </span><span class="s1">keyPressed(KeyEvent e) {</span>
+		<span class="s2">//move right/left.  !gameOver so we can't control anything when we lose</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_RIGHT &amp;&amp; canRight() &amp;&amp; !gameOver) {</span>
+			<span class="s1">piece.x += </span><span class="s3">42</span><span class="s0">;		</span>
+			<span class="s1">gPiece.x += </span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s0">this</span><span class="s1">.repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_LEFT &amp;&amp; canLeft() &amp;&amp; !gameOver) {</span>
+			<span class="s1">piece.x -= </span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s1">gPiece.x -= </span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s0">this</span><span class="s1">.repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		
+		<span class="s2">//rotate when keypressed; boolean for clockwise/anticlockwise</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_A &amp;&amp; !gameOver &amp;&amp; canRotateLeft()) {</span>
+			<span class="s1">piece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">gPiece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_D &amp;&amp; !gameOver &amp;&amp; canRotateRight()) {</span><span class="s2">//ditto</span>
+			<span class="s1">piece.rotate(</span><span class="s0">false</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">gPiece.rotate(</span><span class="s0">false</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_ESCAPE) {</span>
+			<span class="s1">System.exit(</span><span class="s3">0</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s0">return;</span>
+		<span class="s1">}</span>
+
+		<span class="s2">//controls for holding piece</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_W &amp;&amp; canHold &amp;&amp; !gameOver) {</span>
+			<span class="s1">holdPiece()</span><span class="s0">;</span>
+			<span class="s1">canHold = </span><span class="s0">false;</span>
+		<span class="s1">}</span>
+		
+		<span class="s2">//hard drop. our ghost piece method already did all the work</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_UP &amp;&amp; !gameOver) {</span>
+			<span class="s1">piece = gPiece</span><span class="s0">;</span>
+			<span class="s1">piece.isFalling = </span><span class="s0">false;</span>
+			<span class="s1">repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+
+		<span class="s2">//soft drop.</span>
+		<span class="s2">//TODO figure out why there's a delay</span>
+		<span class="s0">if</span><span class="s1">(e.getKeyCode() == KeyEvent.VK_DOWN) {</span>
+			<span class="s1">fastfall = </span><span class="s0">true;</span>
+			<span class="s1">repaint()</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		
+	<span class="s1">}</span>
+	
+	<span class="s2">//Checks to see if there are blocks below or if there is even gameboard below</span>
+	<span class="s0">private boolean </span><span class="s1">canFall() {</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {         </span><span class="s2">//cycle through tetrimino matrix </span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {     </span>
+				<span class="s0">try</span><span class="s1">{</span><span class="s0">if</span><span class="s1">(piece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {   </span><span class="s2">//to find active blocks forming tetrimino</span>
+					<span class="s0">if</span><span class="s1">(board[(piece.y + (</span><span class="s3">42</span><span class="s1">*r) + </span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42</span><span class="s1">][(piece.x + (</span><span class="s3">42</span><span class="s1">*c))/</span><span class="s3">42</span><span class="s1">] &gt; </span><span class="s3">0</span><span class="s1">) {</span><span class="s2">//if gameboard matrix at block one below tetrimino exists; converts coordinates to 20x10 grid</span>
+						<span class="s0">if</span><span class="s1">(piece.y == </span><span class="s3">0</span><span class="s1">) { </span><span class="s2">//can't move cuz block below and also we're at top</span>
+							<span class="s1">gameOver = </span><span class="s0">true;</span>
+						<span class="s1">}</span><span class="s2">//otherwise stop the gravity and say no canFall</span>
+						<span class="s1">piece.isFalling = </span><span class="s0">false;</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+					<span class="s2">//checks if we're at bottom of board;  no idea why 17 and not 20, but don't fix what isn't broken</span>
+					<span class="s0">if</span><span class="s1">((piece.y + (</span><span class="s3">42</span><span class="s1">*r))/</span><span class="s3">42 </span><span class="s1">&gt; </span><span class="s3">17</span><span class="s1">) {</span>
+						<span class="s1">piece.isFalling = </span><span class="s0">false;    </span>
+						<span class="s0">return false;    </span><span class="s2">//why on earth does this work</span>
+					<span class="s1">}</span>
+				<span class="s1">}}</span><span class="s0">catch</span><span class="s1">(NullPointerException e){</span>
+					<span class="s1">queuePiece()</span><span class="s0">;</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s0">return true;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//iterates through individual blocks of tetrimino matrix and compares blocks directly right of them.  ensures collision is accurate to block shape</span>
+	<span class="s0">private boolean </span><span class="s1">canRight() {</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(piece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s0">if</span><span class="s1">(board[(piece.y + (</span><span class="s3">42</span><span class="s1">*r))/</span><span class="s3">42</span><span class="s1">][(piece.x + (</span><span class="s3">42</span><span class="s1">*c) + </span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42</span><span class="s1">] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">((piece.x + (</span><span class="s3">42</span><span class="s1">*c))/</span><span class="s3">42 </span><span class="s1">&gt; </span><span class="s3">8</span><span class="s1">) {</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s0">return true;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//iterates through individual blocks of tetrimino matrix and compares blocks directly left of them.  ensures collision is accurate to block shape</span>
+	<span class="s0">private boolean </span><span class="s1">canLeft() {</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(piece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s0">if</span><span class="s1">(c == </span><span class="s3">0 </span><span class="s1">&amp;&amp; piece.x &lt;= </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">(board[(piece.y + (</span><span class="s3">42</span><span class="s1">*r))/</span><span class="s3">42</span><span class="s1">][(piece.x + (</span><span class="s3">42</span><span class="s1">*c) - </span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42</span><span class="s1">] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">((piece.x + (</span><span class="s3">42</span><span class="s1">*c)-</span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42 </span><span class="s1">&lt; </span><span class="s3">0</span><span class="s1">) {</span>
+						<span class="s0">return false;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s0">return true;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//use invisible piece to check potential moves.  function is same as canRotateRight check comments there for any confusion</span>
+	<span class="s0">private boolean </span><span class="s1">canRotateLeft() {</span>
+		<span class="s2">//sometimes overlaps other blocks when rotating from bottom to right side but why?</span>
+		<span class="s1">Piece temp = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s1">piece.x</span><span class="s0">, </span><span class="s1">piece.y)</span><span class="s0">;</span>
+		<span class="s1">temp.rotate(</span><span class="s0">false</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">tX = temp.x</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">tY = temp.y</span><span class="s0">;</span>
+
+		<span class="s0">if</span><span class="s1">(isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+			<span class="s0">if</span><span class="s1">(temp.t != </span><span class="s3">0 </span><span class="s1">&amp; temp.t != </span><span class="s3">6</span><span class="s1">) {</span>
+				<span class="s2">//126 used for t-spin triple testing.  normal circumstances will return between -42 and 42/84</span>
+				<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x - </span><span class="s3">42</span><span class="s0">; </span><span class="s1">x &lt; tX + </span><span class="s3">168</span><span class="s0">; </span><span class="s1">x += </span><span class="s3">42</span><span class="s1">) {</span>
+					<span class="s1">temp.x=x</span><span class="s0">;</span>
+
+					<span class="s2">//checks alternating lower and higher spots</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">y = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">y &lt; </span><span class="s3">126</span><span class="s0">; </span><span class="s1">y+=</span><span class="s3">42</span><span class="s1">) {</span>
+						<span class="s1">temp.y = temp.y + y</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">piece.y = temp.y</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">if</span><span class="s1">(piece.y &gt; tY){</span>
+								<span class="s1">tSpinCount++</span><span class="s0">;</span>
+							<span class="s1">}</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+
+						<span class="s1">temp.y = temp.y - </span><span class="s3">2</span><span class="s1">*y</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">piece.y = temp.y</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+					<span class="s1">temp.y = tY</span><span class="s0">;</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span><span class="s0">else </span><span class="s1">{</span>
+				<span class="s2">//I spinning is weird because it's 4x4 instead of 3x3</span>
+				<span class="s0">if</span><span class="s1">(piece.rotation != </span><span class="s3">2</span><span class="s1">) {</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x - </span><span class="s3">84</span><span class="s0">; </span><span class="s1">x &lt; tX + </span><span class="s3">84</span><span class="s0">; </span><span class="s1">x += </span><span class="s3">42</span><span class="s1">) {</span>
+						<span class="s1">temp.x=x</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, false</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;Also why here?&quot;</span><span class="s1">)</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span><span class="s0">else </span><span class="s1">{</span>
+					<span class="s2">//I piece in col3 makes x position 2 blocks left of visible piece, so we gotta potentially move the piece when it is on a wall or flush with another piece</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x - </span><span class="s3">42</span><span class="s0">; </span><span class="s1">x &lt; tX + </span><span class="s3">126</span><span class="s0">; </span><span class="s1">x += </span><span class="s3">42</span><span class="s1">) {</span>
+						<span class="s1">temp.x=x</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, false</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;def shouldn't be here&quot;</span><span class="s1">)</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+			<span class="s0">return false;</span>
+		<span class="s1">}</span>
+		<span class="s1">System.out.println(piece.rotation)</span><span class="s0">;</span>
+		<span class="s0">if</span><span class="s1">(piece.rotation == </span><span class="s3">3</span><span class="s1">){</span>
+			<span class="s1">System.out.println(</span><span class="s4">&quot;checking gravity now&quot;</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">temp.Gravity()</span><span class="s0">;</span>
+			<span class="s0">if</span><span class="s1">(isColliding(temp</span><span class="s0">, true</span><span class="s1">))</span>
+				<span class="s0">return false;</span>
+
+		<span class="s1">}</span>
+		<span class="s2">//for checking collision on blocks above temp piece</span>
+		<span class="s2">/*if(tSpinCount == 0) { 
+ 
+            for (int i = 42; i &gt; -84; i -= 42) { 
+                if (temp.y &gt;= 84) { 
+                    temp.y += i; 
+                    if (isColliding(temp, true)) 
+                        return false; 
+                } 
+            } 
+        }*/</span>
+		<span class="s0">if</span><span class="s1">(tSpinCount != </span><span class="s3">0</span><span class="s1">){</span>
+			<span class="s1">piece.x = temp.x + </span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s1">piece.y = temp.y + </span><span class="s3">84</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s2">//I blocks always giving spacial troubles; checks the extra dimension</span>
+		<span class="s0">if</span><span class="s1">(temp.t == </span><span class="s3">0</span><span class="s1">){</span>
+			<span class="s1">temp.y -=</span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s0">if</span><span class="s1">(isColliding(temp</span><span class="s0">, true</span><span class="s1">))</span>
+				<span class="s0">return false;</span>
+		<span class="s1">}</span>
+		<span class="s1">System.out.println(</span><span class="s4">&quot;can rotate left by default&quot;</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">return true;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//TODO implement J/L spins and S/Z spins, T-Spin triples</span>
+	<span class="s2">//use invisible piece to check potential rotation.  helpful because invisible means we only see pre-existing pieces</span>
+	<span class="s0">private boolean </span><span class="s1">canRotateRight() {</span>
+		<span class="s1">Piece temp = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s1">piece.x</span><span class="s0">, </span><span class="s1">piece.y)</span><span class="s0">;</span>
+		<span class="s1">temp.rotate(</span><span class="s0">false</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">tX = temp.x</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">tY = temp.y</span><span class="s0">;</span>
+		<span class="s1">System.out.println(</span><span class="s4">&quot;for Reference Piece Type: &quot; </span><span class="s1">+ piece.t + </span><span class="s4">&quot;  X: &quot; </span><span class="s1">+ (piece.x / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; Y: &quot; </span><span class="s1">+ (piece.y / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; R: &quot; </span><span class="s1">+ piece.rotation)</span><span class="s0">;</span>
+		<span class="s1">System.out.println(</span><span class="s4">&quot;for Reference Temp Type: &quot; </span><span class="s1">+ temp.t + </span><span class="s4">&quot;  X: &quot; </span><span class="s1">+ (temp.x / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; Y: &quot; </span><span class="s1">+ (temp.y / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; R: &quot; </span><span class="s1">+ temp.rotation)</span><span class="s0">;</span>
+		<span class="s0">if</span><span class="s1">(isColliding(temp</span><span class="s0">, false</span><span class="s1">)) {</span>
+			<span class="s2">//System.out.println(&quot;we can;t rotate in place&quot;);</span>
+			<span class="s0">if</span><span class="s1">(temp.t != </span><span class="s3">0</span><span class="s1">) {</span>
+				<span class="s2">//checks to see if we can be one block to side of where we are when rotated.  for when rotation should be possible but we're close to edge</span>
+				<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x + </span><span class="s3">42</span><span class="s0">; </span><span class="s1">x &gt; tX - </span><span class="s3">84</span><span class="s0">; </span><span class="s1">x -= </span><span class="s3">42</span><span class="s1">) {</span>
+					<span class="s1">temp.x=x</span><span class="s0">;</span>
+					<span class="s2">//checks alternating lower and higher spots</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">y = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">y &lt; </span><span class="s3">84</span><span class="s0">; </span><span class="s1">y+=</span><span class="s3">42</span><span class="s1">) {</span>
+						<span class="s1">temp.y = temp.y + y</span><span class="s0">;</span>
+						<span class="s2">//System.out.println(&quot;Checking x coordinates at X: &quot; + (x / 42) + &quot; Y: &quot; + (temp.y / 42));</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;t spin piece x: &quot; </span><span class="s1">+ (temp.x / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; temp y: &quot; </span><span class="s1">+ (temp.y / </span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+							<span class="s2">//System.out.println(&quot;X: &quot; + (temp.x / 42));</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">piece.y = temp.y</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">if</span><span class="s1">(piece.y &gt; tY){</span>
+								<span class="s1">tSpinCount++</span><span class="s0">;</span>
+							<span class="s1">}</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+
+						<span class="s1">temp.y = temp.y - </span><span class="s3">2</span><span class="s1">*y</span><span class="s0">;</span>
+						<span class="s1">System.out.println(</span><span class="s4">&quot;Checking x coordinates at X: &quot; </span><span class="s1">+ (x / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; Y: &quot; </span><span class="s1">+ (temp.y / </span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;t spin piece y: &quot; </span><span class="s1">+ (piece.y / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; temp y: &quot; </span><span class="s1">+ (temp.y / </span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;X: &quot; </span><span class="s1">+ (temp.x / </span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">piece.y = temp.y</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+					<span class="s1">temp.y = tY</span><span class="s0">;</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span><span class="s0">else </span><span class="s1">{</span>
+				<span class="s0">if</span><span class="s1">(piece.rotation != </span><span class="s3">2</span><span class="s1">) {</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x - </span><span class="s3">84</span><span class="s0">; </span><span class="s1">x &lt; tX + </span><span class="s3">84</span><span class="s0">; </span><span class="s1">x += </span><span class="s3">42</span><span class="s1">) {</span><span class="s2">//check for a spot to go in two block radius left and right</span>
+						<span class="s1">temp.x=x</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span><span class="s0">else </span><span class="s1">{</span>
+					<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">x = temp.x - </span><span class="s3">42</span><span class="s0">; </span><span class="s1">x &lt; tX + </span><span class="s3">126</span><span class="s0">; </span><span class="s1">x += </span><span class="s3">42</span><span class="s1">) {</span>
+						<span class="s1">temp.x=x</span><span class="s0">;</span>
+						<span class="s0">if</span><span class="s1">(!isColliding(temp</span><span class="s0">, true</span><span class="s1">)) {</span>
+							<span class="s1">piece.x = temp.x</span><span class="s0">;</span>
+							<span class="s1">gPiece.x = temp.x</span><span class="s0">;</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+			<span class="s0">return false;</span>
+		<span class="s1">}</span>
+
+		<span class="s0">if</span><span class="s1">(tSpinCount &gt; </span><span class="s3">0</span><span class="s1">){</span>
+			<span class="s1">piece.x = tX - </span><span class="s3">42</span><span class="s0">;</span>
+			<span class="s1">piece.y = tY + </span><span class="s3">84</span><span class="s0">;</span>
+		<span class="s1">}</span>
+
+		<span class="s1">System.out.println(</span><span class="s4">&quot;Spinning right by default&quot;</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">return true;</span>
+	<span class="s1">}</span>
+	
+
+	
+	<span class="s2">//checks if a Piece's block location are occupied.  Only will work with invisible pieces used for hypothetical moves</span>
+	<span class="s0">private boolean </span><span class="s1">isColliding(Piece p</span><span class="s0">, boolean </span><span class="s1">test) {</span><span class="s2">//Might need optimization for integration of T-Spin Triples but also meh</span>
+		<span class="s0">if</span><span class="s1">(test)</span>
+			<span class="s1">System.out.println(</span><span class="s4">&quot;checking collision&quot;</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">testCount = </span><span class="s3">0</span><span class="s0">;</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(p.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s0">if</span><span class="s1">(c == </span><span class="s3">0</span><span class="s1">)</span>
+						<span class="s1">testCount++</span><span class="s0">;</span>
+					<span class="s0">try</span><span class="s1">{</span>
+						<span class="s2">//iterates across individual blocks of hypothetical piece and checks if block already in that grid spot</span>
+						<span class="s0">if</span><span class="s1">(board[(p.y + (</span><span class="s3">42</span><span class="s1">*r))/</span><span class="s3">42</span><span class="s1">][(p.x + (</span><span class="s3">42</span><span class="s1">*c))/</span><span class="s3">42</span><span class="s1">] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+							<span class="s0">if </span><span class="s1">(test){</span>
+								<span class="s1">System.out.println(</span><span class="s4">&quot;Colliding with piece at X: &quot; </span><span class="s1">+ (p.x / </span><span class="s3">42</span><span class="s1">) + </span><span class="s4">&quot; Y: &quot; </span><span class="s1">+ (p.y / </span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+								<span class="s1">System.out.println(</span><span class="s4">&quot;X: &quot; </span><span class="s1">+ (p.x + (</span><span class="s3">42 </span><span class="s1">* c)) / </span><span class="s3">42 </span><span class="s1">+ </span><span class="s4">&quot; Y: &quot; </span><span class="s1">+ (p.y + (</span><span class="s3">42 </span><span class="s1">* r)) / </span><span class="s3">42 </span><span class="s1">+ </span><span class="s4">&quot; T: &quot; </span><span class="s1">+ (board[(p.y + (</span><span class="s3">42 </span><span class="s1">* r)) / </span><span class="s3">42</span><span class="s1">][(p.x + (</span><span class="s3">42 </span><span class="s1">* c)) / </span><span class="s3">42</span><span class="s1">] - </span><span class="s3">1</span><span class="s1">) + </span><span class="s4">&quot; R: &quot; </span><span class="s1">+ p.rotation + </span><span class="s4">&quot; Block(r, c): (&quot; </span><span class="s1">+ r + </span><span class="s4">&quot;,&quot; </span><span class="s1">+ c + </span><span class="s4">&quot;)&quot;</span><span class="s1">)</span><span class="s0">;</span>
+							<span class="s1">}</span>
+							<span class="s0">return true;</span>
+						<span class="s1">}</span>
+					<span class="s1">}</span><span class="s0">catch</span><span class="s1">(ArrayIndexOutOfBoundsException e) {</span><span class="s2">//x goes down to -2/-1 at left side depending on piece/rotation</span>
+						<span class="s1">System.out.println(</span><span class="s4">&quot;ArrayIndexOutOfBounds yikes we didn't notice this lol&quot;</span><span class="s1">)</span><span class="s0">;</span>
+						<span class="s0">return true;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">((p.x + (</span><span class="s3">42</span><span class="s1">*c)+</span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42 </span><span class="s1">&gt; </span><span class="s3">10</span><span class="s1">) {</span>
+						<span class="s1">System.out.println(</span><span class="s4">&quot;colliding right border&quot;</span><span class="s1">)</span><span class="s0">;</span>
+						<span class="s0">return true;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">((p.x + (</span><span class="s3">42</span><span class="s1">*c))/</span><span class="s3">42 </span><span class="s1">&lt; </span><span class="s3">0 </span><span class="s1">) {</span>
+						<span class="s1">System.out.println(</span><span class="s4">&quot;colliding left border&quot;</span><span class="s1">)</span><span class="s0">;</span>
+						<span class="s0">return true;</span>
+					<span class="s1">}</span>
+					<span class="s0">if</span><span class="s1">((p.y + (</span><span class="s3">42</span><span class="s1">*r) + </span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42 </span><span class="s1">&gt; </span><span class="s3">19</span><span class="s1">) {</span>
+						<span class="s0">if</span><span class="s1">(test) {</span>
+							<span class="s1">System.out.println(</span><span class="s4">&quot;OUr lowest piece + 1 is Greater than 19: &quot; </span><span class="s1">+ ((p.y + (</span><span class="s3">42</span><span class="s1">*r)+</span><span class="s3">42</span><span class="s1">)/</span><span class="s3">42</span><span class="s1">))</span><span class="s0">;</span>
+							<span class="s2">//mini t-spins at absolute bottom need this function</span>
+							<span class="s0">return </span><span class="s1">(p.y + (</span><span class="s3">42 </span><span class="s1">* r) + </span><span class="s3">42</span><span class="s1">) / </span><span class="s3">42 </span><span class="s1">!= </span><span class="s3">20</span><span class="s0">;</span>
+						<span class="s1">}</span>
+
+						<span class="s0">return true;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(test)</span>
+			<span class="s1">System.out.println(</span><span class="s4">&quot;not Colliding&quot;</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s0">return false;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//checks for line clears by iterating across the board row by row.  clears when it finds a full row</span>
+	<span class="s0">private void </span><span class="s1">checkLines() {</span>
+
+		<span class="s1">ArrayList&lt;Integer&gt; lines = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;()</span><span class="s0">;</span><span class="s2">//lines to be cleared</span>
+		
+		<span class="s0">int </span><span class="s1">lineCount = </span><span class="s3">0</span><span class="s0">;</span><span class="s2">//counter for scoring purposes only</span>
+		
+		<span class="s2">//counts blocks in a row and adds full lines to list of lines cleared in a turn</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">20</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">int </span><span class="s1">count = </span><span class="s3">0</span><span class="s0">;</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">10</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(board[r][c] != </span><span class="s3">0</span><span class="s1">)</span>
+					<span class="s1">count++</span><span class="s0">;</span>
+			<span class="s1">}</span>
+			<span class="s0">if</span><span class="s1">(count &gt;= </span><span class="s3">10</span><span class="s1">) {</span>
+				<span class="s1">lines.add(r)</span><span class="s0">;</span>
+				<span class="s1">lineCount++</span><span class="s0">;</span>
+				<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">10</span><span class="s0">; </span><span class="s1">c++) {</span><span class="s2">//clear row</span>
+					<span class="s1">board[r][c] = </span><span class="s3">0</span><span class="s0">;</span>
+				<span class="s1">}</span>
+
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+
+		<span class="s0">if</span><span class="s1">(tSpinCount != </span><span class="s3">0</span><span class="s1">){</span>
+			<span class="s1">score = score + </span><span class="s3">128</span><span class="s1">*lineCount</span><span class="s0">;</span><span class="s2">//makes t spin doubles same worth as tetrises and t spin triples aren't ridiculously better</span>
+			<span class="s1">tSpinCount = </span><span class="s3">0</span><span class="s0">;</span>
+		<span class="s1">}</span><span class="s0">else</span><span class="s1">{</span>
+			<span class="s1">score = (</span><span class="s0">int</span><span class="s1">) (score + (Math.pow(</span><span class="s3">4</span><span class="s0">, </span><span class="s1">lineCount)))</span><span class="s0">;</span><span class="s2">//scoring is arbitrarily exponential of 4; makes for good rewarding of tetris and triples</span>
+		<span class="s1">}</span>
+		<span class="s2">//move all blocks above row cleared down for all rows cleared</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">i : lines) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = i</span><span class="s0">; </span><span class="s1">r &gt; </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r--) {</span>
+				<span class="s1">System.arraycopy(board[r - </span><span class="s3">1</span><span class="s1">]</span><span class="s0">, </span><span class="s3">0</span><span class="s0">, </span><span class="s1">board[r]</span><span class="s0">, </span><span class="s3">0</span><span class="s0">, </span><span class="s3">10</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s1">lines.clear()</span><span class="s0">;</span><span class="s2">//empty array for next time blocks clear</span>
+		<span class="s1">linesCleared = linesCleared + lineCount</span><span class="s0">;</span>
+		
+		<span class="s2">//level up after 60 lines or 2048 points = 8 tetrises or 32 triples</span>
+		<span class="s0">if</span><span class="s1">(linesCleared % </span><span class="s3">60 </span><span class="s1">== </span><span class="s3">0 </span><span class="s1">&amp;&amp; linesCleared != </span><span class="s3">0</span><span class="s1">){</span>
+			<span class="s1">level++</span><span class="s0">;</span>
+			<span class="s1">linesCleared = </span><span class="s3">0</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(score / </span><span class="s3">2048 </span><span class="s1">&gt; level)</span>
+			<span class="s1">level++</span><span class="s0">;</span>
+		<span class="s1">totalLines += linesCleared</span><span class="s0">;</span>
+		<span class="s1">linesCleared = </span><span class="s3">0</span><span class="s0">;</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//updated rng; creates chunks of 7 containing one of each block and then queues them randomly.  ensures we don't see 3+ in a row </span>
+	<span class="s0">private int </span><span class="s1">returnType() {</span>
+		<span class="s0">int </span><span class="s1">c</span><span class="s0">;</span>
+		
+		<span class="s0">if</span><span class="s1">(tQueue.isEmpty()){</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">i = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">i &lt; </span><span class="s3">7</span><span class="s0">; </span><span class="s1">i++) {</span>
+				<span class="s1">tQueue.add(i)</span><span class="s0">;</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		<span class="s1">c = rnd.nextInt(tQueue.size())</span><span class="s0">;</span>
+		<span class="s0">int </span><span class="s1">r = tQueue.get(c)</span><span class="s0">;</span>
+		<span class="s1">tQueue.remove(c)</span><span class="s0">;</span>
+		
+		
+		<span class="s0">return </span><span class="s1">r</span><span class="s0">;</span>
+		
+	<span class="s1">}</span>
+	
+	<span class="s2">//Creates our next playable piece from the queue.  takes top block makes it playable, shifts all pieces up and spawns a new queue piece</span>
+	<span class="s0">private void </span><span class="s1">queuePiece() {</span>
+		<span class="s1">queue[</span><span class="s3">0</span><span class="s1">].x = </span><span class="s3">210</span><span class="s0">;</span>
+		<span class="s1">queue[</span><span class="s3">0</span><span class="s1">].y = </span><span class="s3">0</span><span class="s0">;</span>
+		
+		<span class="s1">piece = queue[</span><span class="s3">0</span><span class="s1">]</span><span class="s0">;</span>
+		<span class="s1">piece.isFalling = </span><span class="s0">true;</span>
+		
+		<span class="s1">gPiece = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s3">210</span><span class="s0">, </span><span class="s3">840</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">gPiece.isFalling = </span><span class="s0">false;</span>
+		<span class="s1">gPiece.y = </span><span class="s3">840</span><span class="s0">;</span>
+		<span class="s0">if</span><span class="s1">(piece.t == </span><span class="s3">0 </span><span class="s1">&amp;&amp; piece.rotation % </span><span class="s3">2 </span><span class="s1">== </span><span class="s3">0</span><span class="s1">){</span><span class="s2">//makes sure the I piece always starts horizontal</span>
+			<span class="s1">piece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">gPiece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">for </span><span class="s1">(</span><span class="s0">int </span><span class="s1">i = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">i &lt; queue.length - </span><span class="s3">1</span><span class="s0">; </span><span class="s1">i++) {</span>
+			<span class="s1">queue[i] = queue[i + </span><span class="s3">1</span><span class="s1">]</span><span class="s0">;		</span>
+			<span class="s1">queue[i].y = queue[i].y - </span><span class="s3">200</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		
+		<span class="s1">queue[</span><span class="s3">2</span><span class="s1">] = </span><span class="s0">new </span><span class="s1">Piece(returnType()</span><span class="s0">, </span><span class="s3">490</span><span class="s0">, </span><span class="s3">625</span><span class="s1">)</span><span class="s0">;</span><span class="s2">//queue is always 3 tetriminos</span>
+	<span class="s1">}</span>
+	
+	<span class="s2">//our method for holding a piece.  if nothing held put our block in hold spot and queue next piece, otherwise use a temp piece for storage to swap pieces</span>
+	<span class="s0">private void </span><span class="s1">holdPiece() {</span>
+		<span class="s1">Piece temp</span><span class="s0">;</span>
+		<span class="s0">if</span><span class="s1">(hPiece == </span><span class="s0">null</span><span class="s1">) {</span>
+			<span class="s1">hPiece = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s3">444</span><span class="s0">, </span><span class="s3">34</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">hPiece.isFalling = </span><span class="s0">false;</span>
+			<span class="s1">queuePiece()</span><span class="s0">;</span>
+		<span class="s1">}</span><span class="s0">else </span><span class="s1">{</span>
+			<span class="s1">temp = hPiece</span><span class="s0">;</span>
+			<span class="s1">hPiece = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s3">444</span><span class="s0">, </span><span class="s3">34</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">piece = temp</span><span class="s0">;</span>
+			<span class="s1">piece.x = </span><span class="s3">210</span><span class="s0">;</span>
+			<span class="s1">piece.y = </span><span class="s3">0</span><span class="s0">;</span>
+			
+			<span class="s1">piece.isFalling = </span><span class="s0">true;</span>
+			<span class="s1">gPiece = </span><span class="s0">new </span><span class="s1">Piece(piece.t</span><span class="s0">, </span><span class="s3">210</span><span class="s0">, </span><span class="s3">840</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">gPiece.isFalling = </span><span class="s0">false;</span>
+			<span class="s1">gPiece.y = </span><span class="s3">840</span><span class="s0">;</span>
+			<span class="s0">if</span><span class="s1">(piece.t == </span><span class="s3">0 </span><span class="s1">&amp;&amp; piece.rotation % </span><span class="s3">2 </span><span class="s1">== </span><span class="s3">0</span><span class="s1">){</span><span class="s2">//makes sure the I piece always starts horizontal</span>
+				<span class="s1">piece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+				<span class="s1">gPiece.rotate(</span><span class="s0">true</span><span class="s1">)</span><span class="s0">;</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		
+		<span class="s1">repaint()</span><span class="s0">;</span>
+	<span class="s1">}</span>
+	
+	
+	<span class="s2">//logic for the shadow piece at bottom.  Ensures same x coordinate as playable piece at whatever spot the block would hit if up is pressed</span>
+	<span class="s0">private void </span><span class="s1">paintGhost(Graphics g) {</span>
+		<span class="s2">//for transparency purposes</span>
+		<span class="s1">Graphics2D g2d = (Graphics2D)g</span><span class="s0">;</span>
+		<span class="s1">AlphaComposite composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER</span><span class="s0">, </span><span class="s1">(</span><span class="s0">float</span><span class="s1">) </span><span class="s3">0.25</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g2d.setComposite(composite)</span><span class="s0">;</span>
+		<span class="s1">gPiece.y = piece.y</span><span class="s0">;</span>
+		<span class="s0">while</span><span class="s1">(!isColliding(gPiece</span><span class="s0">, false</span><span class="s1">)) {</span><span class="s2">//quite literally put the piece at our current location and immediately drop it every frame</span>
+			<span class="s1">gPiece.y += </span><span class="s3">42</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(isColliding(gPiece</span><span class="s0">, false</span><span class="s1">)) {</span>
+			<span class="s1">gPiece.y-=</span><span class="s3">42</span><span class="s0">;</span>
+		<span class="s1">}</span>
+		<span class="s0">if</span><span class="s1">(gPiece.x != piece.x)</span>
+			<span class="s1">gPiece.x = piece.x</span><span class="s0">;</span>
+		<span class="s0">if</span><span class="s1">(piece.y &gt;= gPiece.y)</span>
+			<span class="s1">gPiece.y = piece.y</span><span class="s0">;</span>
+		
+		<span class="s2">//paint piece</span>
+		<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">r = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">r &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">r++) {</span>
+			<span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">c = </span><span class="s3">0</span><span class="s0">; </span><span class="s1">c &lt; </span><span class="s3">4</span><span class="s0">; </span><span class="s1">c++) {</span>
+				<span class="s0">if</span><span class="s1">(gPiece != </span><span class="s0">null </span><span class="s1">&amp;&amp; gPiece.cube[c][r] &gt; </span><span class="s3">0</span><span class="s1">) {</span>
+					<span class="s0">switch </span><span class="s1">(gPiece.t) {</span>
+						<span class="s0">case </span><span class="s3">0 </span><span class="s1">-&gt; lBlue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">1 </span><span class="s1">-&gt; orange.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">2 </span><span class="s1">-&gt; blue.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">3 </span><span class="s1">-&gt; green.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">4 </span><span class="s1">-&gt; purp.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">5 </span><span class="s1">-&gt; red.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+						<span class="s0">case </span><span class="s3">6 </span><span class="s1">-&gt; yellow.paintIcon(</span><span class="s0">this, </span><span class="s1">g</span><span class="s0">, </span><span class="s1">gPiece.x + (</span><span class="s3">42 </span><span class="s1">* c)</span><span class="s0">, </span><span class="s1">gPiece.y + (</span><span class="s3">42 </span><span class="s1">* r))</span><span class="s0">;</span>
+					<span class="s1">}</span>
+				<span class="s1">}</span>
+			<span class="s1">}</span>
+		<span class="s1">}</span>
+		<span class="s2">//set our opacity back to fully opaque for rest of blocks</span>
+		<span class="s1">composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER</span><span class="s0">, </span><span class="s1">(</span><span class="s0">float</span><span class="s1">) </span><span class="s3">1</span><span class="s1">)</span><span class="s0">;</span>
+		<span class="s1">g2d.setComposite(composite)</span><span class="s0">;</span>
+	<span class="s1">}</span>
+	
+<span class="s1">}</span>
+</pre>
+</body>
+</html>
